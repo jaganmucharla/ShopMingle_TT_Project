@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Catalog from "./pages/Catalog.tsx";
 import AuthPage from "./pages/Auth.tsx";
+import Orders from "./pages/Orders.tsx";
 
 import { CartProvider } from "@/context/CartContext";
 
@@ -18,12 +19,13 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/search" element={<Catalog />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/orders" element={<Orders />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

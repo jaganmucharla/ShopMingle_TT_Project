@@ -1,16 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { signIn, signUp, getCurrentUser, signOut } from "@/lib/dataService";
+import { LogOut, User, ShoppingBag } from "lucide-react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(getCurrentUser());
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,15 +24,14 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const u = await signIn(email, password);
+        setUser(u);
         toast.success("Successfully logged in!");
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+        await signUp(email, password);
         toast.success("Signup successful! You can now log in.");
-        setIsLogin(true); // Switch to login after signup
+        setIsLogin(true);
       }
     } catch (error: any) {
       toast.error(error.message || "Authentication failed");
@@ -34,6 +39,48 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  const handleLogout = async () => {
+    await signOut();
+    setUser(null);
+    toast.success("Logged out successfully");
+  };
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-card border border-border rounded-2xl p-8 shadow-xl">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 rounded-full bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                <User className="w-10 h-10 text-accent-foreground" />
+              </div>
+              <h2 className="text-3xl font-display font-bold mb-2">My Account</h2>
+              <p className="text-muted-foreground">{user.email}</p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => navigate("/catalog")}
+                className="w-full bg-gradient-gold text-accent-foreground font-bold h-12 flex items-center gap-2"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                Continue Shopping
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full h-12 flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

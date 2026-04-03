@@ -2,26 +2,18 @@ import { motion } from "framer-motion";
 import { Star, ShoppingCart, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
-import { defaultProducts } from "@/lib/defaultData";
+import { fetchFlashDeals, type Product } from "@/lib/dataService";
 
 export default function DealsSection() {
   const { addToCart } = useCart();
 
   const { data: deals, isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('*').limit(8);
-      if (error || !data || data.length === 0) {
-        console.warn("Falling back to default deals. Did you run the schema.sql in Supabase?", error);
-        return defaultProducts.slice(0, 8);
-      }
-      return data;
-    }
+    queryKey: ['flash-deals'],
+    queryFn: fetchFlashDeals,
   });
 
-  const displayDeals = deals || defaultProducts.slice(0, 8);
+  const displayDeals = deals || [];
 
   return (
     <section className="py-16 md:py-24 bg-muted/50">
@@ -55,7 +47,7 @@ export default function DealsSection() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {displayDeals.map((deal: any, i: number) => (
+            {displayDeals.map((deal: Product, i: number) => (
               <motion.div
                 key={deal.id}
                 initial={{ opacity: 0, y: 20 }}

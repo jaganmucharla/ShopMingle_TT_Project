@@ -5,9 +5,8 @@ import { Star, ShoppingCart, ChevronRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
-import { defaultProducts, categoriesList } from "@/lib/defaultData";
+import { fetchProducts, getCategoryNames, type Product } from "@/lib/dataService";
 
 export default function Catalog() {
   const [searchParams] = useSearchParams();
@@ -24,29 +23,10 @@ export default function Catalog() {
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["catalog", categoryStr, queryStr],
-    queryFn: async () => {
-      let query = supabase.from("products").select("*");
-      if (categoryStr) query = query.ilike("category", `%${categoryStr}%`);
-      if (queryStr) query = query.ilike("name", `%${queryStr}%`);
-      const { data, error } = await query;
-
-      if (error || !data || data.length === 0) {
-        let local = [...defaultProducts];
-        if (categoryStr) {
-          local = local.filter((p) =>
-            p.category.toLowerCase().includes(categoryStr.toLowerCase())
-          );
-        }
-        if (queryStr) {
-          local = local.filter((p) =>
-            p.name.toLowerCase().includes(queryStr.toLowerCase())
-          );
-        }
-        return local;
-      }
-      return data;
-    },
+    queryFn: () => fetchProducts({ category: categoryStr, query: queryStr }),
   });
+
+  const allCategories = getCategoryNames();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -79,7 +59,7 @@ export default function Catalog() {
           >
             All
           </Button>
-          {categoriesList.map((cat) => (
+          {allCategories.map((cat) => (
             <Button
               key={cat}
               size="sm"
@@ -104,7 +84,7 @@ export default function Catalog() {
           </div>
         ) : products && products.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-            {products.map((product: any, i: number) => (
+            {products.map((product: Product, i: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}

@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { createOrder } from "@/lib/dataService";
 
 export default function CartSheet() {
   const { items, totalItems, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
@@ -18,30 +18,14 @@ export default function CartSheet() {
     setIsProcessing(true);
     
     try {
-      // 1. Save order to Supabase
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert([{ total_amount: totalAmount, status: 'completed' }])
-        .select()
-        .single();
-        
-      if (orderError) {
-        console.error("Order save error:", orderError);
-        toast.warning("Proceeding with local checkout (Database schema missing or unauthorized).");
-      } else if (orderData) {
-        // 2. Save order items
-        const orderItems = items.map(item => ({
-          order_id: orderData.id,
-          product_id: item.id.length > 10 ? item.id : undefined, // Fallback IDs may not be UUIDs
-          quantity: item.quantity,
-          price: item.price
-        }));
-        
-        try {
-          await supabase.from('order_items').insert(orderItems.filter(i => i.product_id));
-        } catch(e) { console.log('Item insert skipped for fake data') }
-      }
+      const orderItems = items.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
 
+      await createOrder(totalAmount, orderItems);
       setOrderComplete(true);
       toast.success("Order placed successfully! Delivery within 30 minutes.");
     } catch (error) {
